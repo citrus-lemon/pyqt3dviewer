@@ -13,7 +13,7 @@ def inject_generic_repr(cls):
     def generic_repr(that):
         class_items = ['{}={}'.format(k, v) for k, v in that.__dict__.items()
             if k not in ['entity', 'transform', 'mesh', 'meterial']]
-        return f'<{that.__class__.__name__} ' + ', '.join(class_items) + '>'
+        return '<{} '.format(that.__class__.__name__) + ', '.join(class_items) + '>'
 
     cls.__repr__ = generic_repr
     return cls
