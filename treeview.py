@@ -17,14 +17,22 @@ class TreeView(QTreeWidget):
     
     def updateData(self, data, sel=0):
         self.clear()
+        groups = []
+        selItem = None
         def item(i):
+            nonlocal groups, selItem
             it = QTreeWidgetItem([data[i].name, str(i)])
             if i == sel:
-                it.setSelected(True)
+                selItem = it
             if data[i].type == "group":
+                groups.append(it)
                 for c in data[i].children:
                     it.addChild(item(c))
             return it
         for c in data[0].children:
             self.addTopLevelItem(item(c))
+        if selItem is not None:
+            selItem.setSelected(True)
+        for it in groups:
+            it.setExpanded(True)
         # self.update()

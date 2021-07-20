@@ -40,7 +40,7 @@ class DataObject():
     def setName(self, _name):
         self.name = _name
 
-    def destroy(self):
+    def destroy(self, data=None):
         pass
 
     def assignID(self, _id):
@@ -56,7 +56,7 @@ class RootObject(DataObject):
         self.parent = None
         self.entity = Qt3DCore.QEntity()
     
-    def destroy(self):
+    def destroy(self, data=None):
         raise RuntimeError("Root cannot be destroyed")
 
 @inject_generic_repr
@@ -88,13 +88,6 @@ class EntityObject(DataObject):
     
     def setCallback(self, fn):
         self.entity.setCallback(fn)
-    
-    def applyTransform(self):
-        t = Qt3DCore.QTransform()
-        t.rotate(self.rx, axis=Qt.XAxis)
-        t.rotate(self.ry, axis=Qt.YAxis)
-        t.rotate(self.rz, axis=Qt.ZAxis)
-        self.transform.setMatrix(t.m11(), t.m12(), t.m13(), t.m21(), t.m22(), t.m23(), t.m31(), t.m32(), t.m33())
     
     def setTrans(self, dx=None, dy=None, dz=None):
         if dx is not None:
@@ -197,8 +190,56 @@ class GroupObject(DataObject):
         super().__init__()
         self.name = name
         self.type = "group"
-        self.entity = None
-        raise NotImplementedError("GroupObject")
+        self.children = []
+        self.entity = Qt3DCore.QEntity()
+        self.transform = Qt3DCore.QTransform()
+        self.dx = 0
+        self.dy = 0
+        self.dz = 0
+        self.rx = 0
+        self.ry = 0
+        self.rz = 0
+        self.color = (0, 0, 0)
+
+        self.entity.addComponent(self.transform)
+    
+    def setTrans(self, dx=None, dy=None, dz=None):
+        if dx is not None:
+            self.dx = dx
+        if dy is not None:
+            self.dy = dy
+        if dz is not None:
+            self.dz = dz
+        self.transform.setTranslation(QVector3D(self.dx, self.dy, self.dz))
+    
+    def setRotate(self, rx=None, ry=None, rz=None):
+        if rx is not None:
+            self.rx = rx
+        if ry is not None:
+            self.ry = ry
+        if rz is not None:
+            self.rz = rz
+        self.transform.setRotationX(self.rx)
+        self.transform.setRotationY(self.ry)
+        self.transform.setRotationZ(self.rz)
+    
+    def setParent(self, _id, par):
+        self.parent = _id
+        self.entity.setParent(par.entity)
+        par.children.append(self.idnum)
+    
+    def destroy(self, data=None):
+        self.entity.setParent(None)
+        if self.parent is not None:
+            data[self.parent].children.remove(self.idnum)
+        def recDestroy(i):
+            if i in data:
+                if data[i].type == 'group':
+                    for j in data[i].children:
+                        recDestroy(j)
+                del data[i]
+        for j in self.children:
+            recDestroy(j)
 
 class DataModel(QObject):
     def __init__(self):
@@ -261,7 +302,16 @@ class DataModel(QObject):
                 el.setScale(data["scale"])
                 el.setURL(data["url"])
         elif data["type"] == "group":
-            raise NotImplementedError("Group load")
+            self._no += 1
+            el = GroupObject(data["name"])
+            num = self._no
+            self._data[num] = el
+            el.assignID(num)
+            el.setParent(parent, self._data[parent])
+            el.setTrans(*data["pos"][:3])
+            el.setRotate(*data["pos"][3:])
+            for entry in data["children"]:
+                self.loadData(entry, num)
     
     def dumpData(self, i):
         if i == 0:
@@ -286,7 +336,9 @@ class DataModel(QObject):
             else:
                 rst["shape"] = el.shape
         elif el.type == "group":
-            raise NotImplementedError("Group dump")
+            rst["type"] = "group"
+            rst["pos"] = [el.dx, el.dy, el.dz, el.rx, el.ry, el.rz]
+            rst["children"] = [self.dumpData(j) for j in self._data[i].children]
         return rst
     
     def dumpToFile(self):
@@ -295,8 +347,15 @@ class DataModel(QObject):
         json.dump(self.dumpData(0), fp)
         fp.close()
     
+    def findCurrentParent(self):
+        if self._data[self._sel].type == 'group':
+            return self._sel
+        else:
+            return 0
+
     def addShape(self, shape):
         self._no += 1
+        par = self.findCurrentParent()
         name = "{} {}".format(shape, self._no)
         if shape == 'sphere':
             self._data[self._no] = SphereObject(name)
@@ -305,7 +364,18 @@ class DataModel(QObject):
         elif shape == 'stl':
             self._data[self._no] = STLObject(name)
         self._data[self._no].assignID(self._no)
-        self._data[self._no].setParent(0, self._data[0])
+        self._data[self._no].setParent(par, self._data[par])
+
+        self.updateTree()
+        self.dumpToFile()
+    
+    def addGroup(self):
+        self._no += 1
+        par = self.findCurrentParent()
+        name = "{} {}".format("Group", self._no)
+        self._data[self._no] = GroupObject(name)
+        self._data[self._no].assignID(self._no)
+        self._data[self._no].setParent(par, self._data[par])
 
         self.updateTree()
         self.dumpToFile()
@@ -332,7 +402,7 @@ class DataModel(QObject):
                 self._data[_id].setName(vargs["name"])
                 self.updateTree()
             
-            if self._data[_id].type == 'entity':
+            if self._data[_id].type == 'entity' or self._data[_id].type == 'group':
                 do_translate = False
                 dx, dy, dz = None, None, None
                 if "dx" in vargs:
@@ -360,7 +430,8 @@ class DataModel(QObject):
                     rz = vargs["rz"]
                 if do_rotate:
                     self._data[_id].setRotate(rx, ry, rz)
-                
+
+            if self._data[_id].type == 'entity':
                 if "color" in vargs:
                     self._data[_id].setColor(*vargs["color"])
 
@@ -403,7 +474,9 @@ class DataModel(QObject):
         return self._data[0].entity
     
     def incUpdate(self, **vargs):
-        if self._sel != 0 and self._data[self._sel].type == "entity":
+        if self._sel != 0 and (
+            self._data[self._sel].type == "entity" or
+            self._data[self._sel].type == "group"):
             el = self._data[self._sel]
 
             do_translate = False

@@ -141,13 +141,28 @@ class ObjectDetail(QVBoxLayout):
             else:
                 self._box_detail.hide()
                 self._sphere_detail.hide()
+        elif data.type == "group":
+            self._name_detail.show()
+            self._co_detail.show()
+            self._color_detail.hide()
+            self._box_detail.hide()
+            self._sphere_detail.hide()
+            self._stl_detail.hide()
 
+            self._name.setText(data.name)
+            self._translate_control["x"].setValue(data.dx)
+            self._translate_control["y"].setValue(data.dy)
+            self._translate_control["z"].setValue(data.dz)
+            self._rotate_control["x"].setValue(data.rx)
+            self._rotate_control["y"].setValue(data.ry)
+            self._rotate_control["z"].setValue(data.rz)
         else:
             self._name_detail.hide()
             self._co_detail.hide()
             self._color_detail.hide()
             self._box_detail.hide()
             self._sphere_detail.hide()
+            self._stl_detail.hide()
         self._sel = sel
 
     def callback(self, field):
