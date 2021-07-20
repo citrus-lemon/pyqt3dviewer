@@ -64,7 +64,7 @@ class ObjectDetail(QVBoxLayout):
         for l in ["length", "width", "height"]:
             w = QDoubleSpinBox()
             w.setRange(0.1, 100)
-            w.setValue(5)
+            w.setSingleStep(5)
             w.valueChanged.connect(self.callback(l))
             self._box_form.addRow(self.tr(l + ":"), w)
             self._box_control[l] = w
@@ -76,7 +76,7 @@ class ObjectDetail(QVBoxLayout):
         self._sphere_detail.setLayout(self._sphere_form)
         self._sphere_radius = QDoubleSpinBox()
         self._sphere_radius.setRange(0.1, 100)
-        self._sphere_radius.setValue(5)
+        self._sphere_radius.setSingleStep(5)
         self._sphere_radius.valueChanged.connect(self.callback("radius"))
         self._sphere_form.addRow(self.tr("radius:"), self._sphere_radius)
         self.addWidget(self._sphere_detail)
@@ -85,8 +85,15 @@ class ObjectDetail(QVBoxLayout):
         self._stl_detail.setTitle("STL")
         self._stl_layout = QVBoxLayout()
         self._stl_detail.setLayout(self._stl_layout)
+        self._stl_form = QFormLayout()
+        self._stl_scale = QDoubleSpinBox()
+        self._stl_scale.setRange(0.001, 100)
+        self._stl_scale.setSingleStep(0.5)
+        self._stl_scale.valueChanged.connect(self.callback("scale"))
+        self._stl_form.addRow(self.tr("Scale:"), self._stl_scale)
         self._stl_button = QPushButton("Open STL File")
         self._stl_button.clicked.connect(self.stlOpenFile)
+        self._stl_layout.addLayout(self._stl_form)
         self._stl_layout.addWidget(self._stl_button)
         self.addWidget(self._stl_detail)
 
@@ -138,6 +145,7 @@ class ObjectDetail(QVBoxLayout):
                 self._box_detail.hide()
                 self._sphere_detail.hide()
                 self._stl_detail.show()
+                self._stl_scale.setValue(data.scale)
             else:
                 self._box_detail.hide()
                 self._sphere_detail.hide()
