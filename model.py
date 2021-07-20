@@ -26,7 +26,8 @@ class BindingEntity(Qt3DCore.QEntity):
         self._callback = fn
     
     def onClicked(self, ev):
-        print("clicked", self.idnum)
+        if self._callback is not None:
+            self._callback(self.idnum)
 
 @inject_generic_repr
 class DataObject():
@@ -277,6 +278,7 @@ class DataModel(QObject):
                 el = BoxObject(data["name"])
                 self._data[self._no] = el
                 el.assignID(self._no)
+                el.setCallback(self.touchElement)
                 el.setParent(parent, self._data[parent])
                 el.setTrans(*data["pos"][:3])
                 el.setRotate(*data["pos"][3:])
@@ -286,6 +288,7 @@ class DataModel(QObject):
                 el = SphereObject(data["name"])
                 self._data[self._no] = el
                 el.assignID(self._no)
+                el.setCallback(self.touchElement)
                 el.setParent(parent, self._data[parent])
                 el.setTrans(*data["pos"][:3])
                 el.setRotate(*data["pos"][3:])
@@ -295,6 +298,7 @@ class DataModel(QObject):
                 el = STLObject(data["name"])
                 self._data[self._no] = el
                 el.assignID(self._no)
+                el.setCallback(self.touchElement)
                 el.setParent(parent, self._data[parent])
                 el.setTrans(*data["pos"][:3])
                 el.setRotate(*data["pos"][3:])
@@ -364,6 +368,7 @@ class DataModel(QObject):
         elif shape == 'stl':
             self._data[self._no] = STLObject(name)
         self._data[self._no].assignID(self._no)
+        self._data[self._no].setCallback(self.touchElement)
         self._data[self._no].setParent(par, self._data[par])
 
         self.updateTree()
@@ -395,6 +400,10 @@ class DataModel(QObject):
     def selectElement(self, _id):
         self._sel = int(_id)
         self.updateDetail()
+    
+    def touchElement(self, _id):
+        self.selectElement(_id)
+        self.updateTree()
 
     def setValue(self, _id, **vargs):
         if _id != 0:

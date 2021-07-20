@@ -5,6 +5,7 @@ from PySide2.Qt3DExtras import (Qt3DExtras)
 from PySide2.Qt3DRender import (Qt3DRender)
 from PySide2.QtWidgets import *
 import math
+from model import BindingEntity
 
 class Viewer(Qt3DExtras.Qt3DWindow):
     def __init__(self, root):
@@ -24,6 +25,10 @@ class Viewer(Qt3DExtras.Qt3DWindow):
         self.light.setWorldDirection(QVector3D(100,-100,-100))
         self.rootEntity.addComponent(self.light)
 
+        self.picker = Qt3DRender.QObjectPicker(self.rootEntity)
+        self.rootEntity.addComponent(self.picker)
+        self.picker.clicked.connect(self.pickerTouch)
+
         self.press = None
         self.last_x = 0
         self.last_y = 0
@@ -39,6 +44,11 @@ class Viewer(Qt3DExtras.Qt3DWindow):
         self.updateMatrix()
 
         self._callback = None
+    
+    def pickerTouch(self, ev):
+        e = ev.entity()
+        if isinstance(e, BindingEntity):
+            e.onClicked(ev)
     
     def updateMatrix(self):
         m = QMatrix4x4()
