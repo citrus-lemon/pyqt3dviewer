@@ -19,6 +19,8 @@ class TreeView(QTreeWidget):
         self.clear()
         def item(i):
             it = QTreeWidgetItem([data[i].name, str(i)])
+            if i == sel:
+                it.setSelected(True)
             if data[i].type == "group":
                 for c in data[i].children:
                     it.addChild(item(c))

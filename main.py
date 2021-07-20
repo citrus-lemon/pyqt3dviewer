@@ -26,8 +26,8 @@ class MainWindow(QWidget):
         layout.addWidget(viewer, 4)
         layout.addLayout(panel, 1)
 
-        alist = TreeView()
-        panel.addWidget(alist)
+        self._tree = TreeView()
+        panel.addWidget(self._tree)
 
         buttonLayout = QHBoxLayout()
         bBox = QPushButton("+Box")
@@ -45,21 +45,21 @@ class MainWindow(QWidget):
         buttonLayout.addWidget(bSphere)
         buttonLayout.addWidget(bStl)
         buttonLayout.addWidget(bMinus)
-        buttonLayout.addWidget(bUndo)
-        buttonLayout.addWidget(bRedo)
+        # buttonLayout.addWidget(bUndo)
+        # buttonLayout.addWidget(bRedo)
 
         panel.addLayout(buttonLayout)
 
-        detail = ObjectDetail()
-        panel.addLayout(detail)
+        self._detail = ObjectDetail()
+        panel.addLayout(self._detail)
 
         self.setLayout(layout)
 
-        self._model.assignCallback("tree", alist.updateData)
-        alist.setCallback(self._model.selectElement)
+        self._model.assignCallback("tree", self._tree.updateData)
+        self._tree.setCallback(self._model.selectElement)
 
-        self._model.assignCallback("detail", detail.updateValue)
-        detail.setCallback(self._model.setValue)
+        self._model.assignCallback("detail", self._detail.updateValue)
+        self._detail.setCallback(self._model.setValue)
 
         self._3dview.setCallback(self._model.incUpdate)
 

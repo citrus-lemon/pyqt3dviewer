@@ -5,8 +5,6 @@ from PySide2.Qt3DRender import (Qt3DRender)
 from PySide2.QtGui import QMatrix4x4, QQuaternion, QVector3D, QColor
 import os
 import json
-import pprint
-pp = pprint.PrettyPrinter(indent=2).pprint
 
 def inject_generic_repr(cls):
     """ Injects a generic repr function """
@@ -308,7 +306,7 @@ class DataModel(QObject):
             self._data[self._no] = STLObject(name)
         self._data[self._no].assignID(self._no)
         self._data[self._no].setParent(0, self._data[0])
-        pp(self._data)
+
         self.updateTree()
         self.dumpToFile()
     
